@@ -1,5 +1,7 @@
+import cheerio from "cheerio";
 import dotenv from "dotenv";
 import Eris from "eris";
+import fetch from "node-fetch";
 
 dotenv.config();
 
@@ -14,13 +16,22 @@ bot.on("ready", () => {
   console.log("connected to gateway");
 });
 
-bot.on("messageCreate", (m) => {
+bot.on("messageCreate", async (m) => {
   if (m.author.bot) return;
 
-  const links = PIXIV_REGEX.exec(m.content);
-  if (!links) return;
+  let match = PIXIV_REGEX.exec(m.content);
+  if (!match) return;
 
-  console.log(links);
+  let ids: number[] = [];
+  do {
+    ids.push(parseInt(match[1]));
+  } while ((match = PIXIV_REGEX.exec(m.content)) !== null);
+
+  ids = [...new Set(ids)];
+
+  for (const id of ids) {
+    console.log(id);
+  }
 });
 
 bot.connect();
