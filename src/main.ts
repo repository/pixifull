@@ -42,7 +42,7 @@ bot.on("messageCreate", async (m) => {
   const works = (await Promise.all(pWorks)).filter(Boolean);
   if (works.length < 1) return;
 
-  // await m.edit({ flags: 4 });
+  await m.edit({ flags: 4 });
   for (const work of works) {
     bot.createMessage(
       m.channel.id,

@@ -39,7 +39,7 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.3",
     "dotenv": "^8.2.0",
-    "eris": "^0.14.0",
+    "eris": "github:repository/eris",
     "node-fetch": "^2.6.1",
     "pixiv-app-api": "^1.2.1"
   }
