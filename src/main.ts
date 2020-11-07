@@ -55,7 +55,9 @@ bot.on("messageCreate", async (m) => {
             url: "attachment://" + work?.file_name,
           },
           author: {
-            name: "pixiv",
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            name: work!.author,
+            url: work?.author_url,
           },
         },
       },
