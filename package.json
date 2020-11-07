@@ -1,0 +1,37 @@
+{
+  "name": "pixifull",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node .",
+    "start:dev": "tsc-watch --outDir dist_dev --onSuccess \"node dist_dev/main\"",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "eslint \"src/**/*.ts\" --fix"
+  },
+  "lint-staged": {
+    "src/**/*.ts": "eslint --fix"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npx lint-staged"
+    }
+  },
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^14.0.27",
+    "@typescript-eslint/eslint-plugin": "^3.9.0",
+    "@typescript-eslint/parser": "^3.9.0",
+    "eslint": "^7.6.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "husky": "^4.2.5",
+    "lint-staged": "^10.2.11",
+    "prettier": "2.0.5",
+    "tsc-watch": "^4.2.9",
+    "typescript": "^3.9.7"
+  }
+}
