@@ -1,7 +1,9 @@
 import cheerio from "cheerio";
 import dotenv from "dotenv";
 import Eris from "eris";
-import fetch from "node-fetch";
+import fetch, { Response } from "node-fetch";
+
+import { Metadata } from "./Metadata";
 
 dotenv.config();
 
@@ -29,8 +31,33 @@ bot.on("messageCreate", async (m) => {
 
   ids = [...new Set(ids)];
 
+  const pUrls: Promise<string | null>[] = [];
   for (const id of ids) {
-    console.log(id);
+    pUrls.push(
+      // eslint-disable-next-line no-async-promise-executor
+      new Promise(async (res) => {
+        let resp: Response;
+        try {
+          resp = await fetch("https://www.pixiv.net/artworks/" + id);
+        } catch {
+          return res(null);
+        }
+        if (resp.status != 200) return res(null);
+
+        const $ = cheerio.load(await resp.text());
+
+        const meta: Metadata = JSON.parse(
+          $("#meta-preload-data").prop("content")
+        );
+
+        res(meta.illust[Object.keys(meta.illust)[0]].urls.original);
+      })
+    );
+  }
+
+  const urls = (await Promise.all(pUrls)).filter(Boolean);
+  for (const url of urls) {
+    console.log(url);
   }
 });
 
