@@ -1,13 +1,16 @@
 import cheerio from "cheerio";
 import dotenv from "dotenv";
 import Eris from "eris";
-import fetch, { Response } from "node-fetch";
+import fetch, { Headers, Response } from "node-fetch";
 
 import { Metadata } from "./Metadata";
 
 dotenv.config();
 
 const PIXIV_REGEX = /https?:\/\/(?:www\.|)pixiv\.net\/(?:en\/|)artworks\/(\d+)/g;
+const IMAGE_HEADERS = new Headers({
+  Referer: "http://www.pixiv.net/",
+});
 
 const token = process.env["TOKEN"];
 if (!token) throw "Token not specified";
@@ -42,7 +45,7 @@ bot.on("messageCreate", async (m) => {
         } catch {
           return res(null);
         }
-        if (resp.status != 200) return res(null);
+        if (resp.status != 200 && !resp.ok) return res(null);
 
         const $ = cheerio.load(await resp.text());
 
@@ -56,8 +59,27 @@ bot.on("messageCreate", async (m) => {
   }
 
   const urls = (await Promise.all(pUrls)).filter(Boolean);
+  const pImgs: Promise<Buffer | null>[] = [];
   for (const url of urls) {
-    console.log(url);
+    pImgs.push(
+      // eslint-disable-next-line no-async-promise-executor
+      new Promise(async (res) => {
+        if (!url) return res(null);
+
+        const head = await fetch(url, {
+          method: "HEAD",
+          headers: IMAGE_HEADERS,
+        });
+        if (head.status != 200) return res(null);
+        if (parseInt(head.headers.get("content-length") ?? "0") > 8388608)
+          return res(null);
+
+        const rImg = await fetch(url, { headers: IMAGE_HEADERS });
+        if (rImg.status != 200 && !rImg.ok) return res(null);
+
+        res(await rImg.buffer());
+      })
+    );
   }
 });
 
