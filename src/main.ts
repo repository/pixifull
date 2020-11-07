@@ -1,16 +1,12 @@
-import cheerio from "cheerio";
 import dotenv from "dotenv";
 import Eris from "eris";
-import fetch, { Headers, Response } from "node-fetch";
 
-import { Metadata } from "./Metadata";
+import { getWorkData, setWorkFile } from "./pixiv";
+import { WorkData } from "./WorkData";
 
 dotenv.config();
 
 const PIXIV_REGEX = /https?:\/\/(?:www\.|)pixiv\.net\/(?:en\/|)artworks\/(\d+)/g;
-const IMAGE_HEADERS = new Headers({
-  Referer: "http://www.pixiv.net/",
-});
 
 const token = process.env["TOKEN"];
 if (!token) throw "Token not specified";
@@ -34,51 +30,41 @@ bot.on("messageCreate", async (m) => {
 
   ids = [...new Set(ids)];
 
-  const pUrls: Promise<string | null>[] = [];
+  const pWorks: Promise<WorkData | undefined>[] = [];
   for (const id of ids) {
-    pUrls.push(
-      // eslint-disable-next-line no-async-promise-executor
-      new Promise(async (res) => {
-        let resp: Response;
-        try {
-          resp = await fetch("https://www.pixiv.net/artworks/" + id);
-        } catch {
-          return res(null);
-        }
-        if (resp.status != 200 && !resp.ok) return res(null);
-
-        const $ = cheerio.load(await resp.text());
-
-        const meta: Metadata = JSON.parse(
-          $("#meta-preload-data").prop("content")
-        );
-
-        res(meta.illust[Object.keys(meta.illust)[0]].urls.original);
-      })
+    pWorks.push(
+      getWorkData(id)
+        .then(setWorkFile)
+        .catch(() => undefined)
     );
   }
 
-  const urls = (await Promise.all(pUrls)).filter(Boolean);
-  const pImgs: Promise<Buffer | null>[] = [];
-  for (const url of urls) {
-    pImgs.push(
-      // eslint-disable-next-line no-async-promise-executor
-      new Promise(async (res) => {
-        if (!url) return res(null);
+  const works = (await Promise.all(pWorks)).filter(Boolean);
+  if (works.length < 1) return;
 
-        const head = await fetch(url, {
-          method: "HEAD",
-          headers: IMAGE_HEADERS,
-        });
-        if (head.status != 200) return res(null);
-        if (parseInt(head.headers.get("content-length") ?? "0") > 8388608)
-          return res(null);
-
-        const rImg = await fetch(url, { headers: IMAGE_HEADERS });
-        if (rImg.status != 200 && !rImg.ok) return res(null);
-
-        res(await rImg.buffer());
-      })
+  // await m.edit({ flags: 4 });
+  for (const work of works) {
+    bot.createMessage(
+      m.channel.id,
+      {
+        embed: {
+          title: work?.title,
+          description: work?.description,
+          url: work?.url,
+          image: {
+            url: "attachment://" + work?.file_name,
+          },
+          author: {
+            name: "pixiv",
+          },
+        },
+      },
+      {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        file: work!.file,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        name: work!.file_name,
+      }
     );
   }
 });
