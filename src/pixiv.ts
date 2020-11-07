@@ -42,7 +42,10 @@ export async function getWorkData(id: number): Promise<WorkData> {
     url,
     author: illust.userName,
     author_url: "https://www.pixiv.net/en/users/" + illust.userId,
-    description: formatDesc(illust.description),
+    description:
+      illust.description !== ""
+        ? formatDesc(illust.description)
+        : illust.extraData.meta.twitter.description,
     file_url: iUrl,
     file_name: iUrl.split("/").pop(),
   } as WorkData;
