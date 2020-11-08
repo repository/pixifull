@@ -77,7 +77,7 @@ export async function setWorkFile(work: WorkData): Promise<WorkData> {
   }
 
   if (!url) throw "file too large";
-  if (url != "original")
+  if (quality !== "original")
     work.footer = `image is not original quality, using ${quality} instead`;
 
   work.file_name = url.split("/").pop() ?? "";
