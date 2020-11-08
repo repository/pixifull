@@ -1,7 +1,7 @@
 import cheerio from "cheerio";
 import fetch, { Headers, Response } from "node-fetch";
 
-import { Metadata } from "./Metadata";
+import { Metadata, Urls } from "./Metadata";
 import { WorkData } from "./WorkData";
 
 const PIXIV_HEADERS = new Headers({
@@ -34,7 +34,7 @@ export async function getWorkData(id: number): Promise<WorkData> {
   const meta: Metadata = JSON.parse($("#meta-preload-data").prop("content"));
   const illust = meta.illust[Object.keys(meta.illust)[0]];
 
-  const iUrl = illust.urls.original;
+  const urls = illust.urls;
 
   return {
     id,
@@ -46,21 +46,42 @@ export async function getWorkData(id: number): Promise<WorkData> {
       illust.description !== ""
         ? formatDesc(illust.description)
         : illust.extraData.meta.twitter.description,
-    file_url: iUrl,
-    file_name: iUrl.split("/").pop(),
+    file_urls: urls,
   } as WorkData;
 }
 
 export async function setWorkFile(work: WorkData): Promise<WorkData> {
-  const head = await fetch(work.file_url, {
-    method: "HEAD",
-    headers: PIXIV_HEADERS,
-  });
-  if (head.status != 200 && !head.ok) throw "unable to get headers";
-  if (parseInt(head.headers.get("content-length") ?? "0") > 8388608)
-    throw "file too big";
+  const qualities: (keyof Urls)[] = [
+    "original",
+    "regular",
+    "small",
+    "thumb",
+    "mini",
+  ];
 
-  const rImg = await fetch(work.file_url, { headers: PIXIV_HEADERS });
+  let url: string | undefined = undefined;
+  let quality: keyof Urls | undefined = undefined;
+
+  for (const q of qualities) {
+    const _url = work.file_urls[q];
+    const head = await fetch(_url, {
+      method: "HEAD",
+      headers: PIXIV_HEADERS,
+    });
+
+    if (head.status != 200 && !head.ok) throw "unable to get headers";
+    if (parseInt(head.headers.get("content-length") ?? "0") > 8388608) continue;
+    url = _url;
+    quality = q;
+    break;
+  }
+
+  if (!url) throw "file too large";
+  if (url != "original")
+    work.footer = `image is not original quality, using ${quality} instead`;
+
+  work.file_name = url.split("/").pop() ?? "";
+  const rImg = await fetch(url, { headers: PIXIV_HEADERS });
   if (rImg.status != 200 && !rImg.ok) throw "unable to get image data";
 
   work.file = await rImg.buffer();

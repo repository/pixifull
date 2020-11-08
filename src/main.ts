@@ -59,6 +59,10 @@ bot.on("messageCreate", async (m) => {
             name: work!.author,
             url: work?.author_url,
           },
+          footer: {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            text: work!.footer,
+          },
         },
       },
       {

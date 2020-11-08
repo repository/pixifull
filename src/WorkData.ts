@@ -1,3 +1,5 @@
+import { Urls } from "./Metadata";
+
 export interface WorkData {
   id: number;
 
@@ -10,6 +12,8 @@ export interface WorkData {
   description: string;
 
   file: Buffer;
-  file_url: string;
+  file_urls: Urls;
   file_name: string;
+
+  footer: string;
 }
